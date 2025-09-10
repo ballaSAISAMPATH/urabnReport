@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -46,6 +47,18 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        civic: {
+          blue: "hsl(var(--civic-blue))",
+          teal: "hsl(var(--civic-teal))",
+          navy: "hsl(var(--civic-navy))",
+          gray: "hsl(var(--civic-gray))",
+          light: "hsl(var(--civic-light))",
+        },
+        status: {
+          pending: "hsl(var(--status-pending))",
+          progress: "hsl(var(--status-progress))",
+          resolved: "hsl(var(--status-resolved))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
