@@ -270,20 +270,33 @@ const AdminPanel = () => {
   const { toast } = useToast();
 
   const sendEmailNotification = async (issue, newStatus) => {
-    try {
-      console.log('Sending email notification:', { issue: issue.id, newStatus });
-      toast({
-        title: "Email Sent",
-        description: `Notification sent to ${issue.reportedBy} about status update to ${newStatus}`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send email notification",
-        variant: "destructive",
-      });
-    }
-  };
+  try {
+    const response = await fetch("http://localhost:5000/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        issueId: issue.id,
+        reportedBy: issue.reportedBy,
+        newStatus,
+      }),
+    });
+
+    if (!response.ok) throw new Error("Failed to send");
+
+    toast({
+      title: "Email Sent",
+      description: `Notification sent to ${issue.reportedBy} about status update to ${newStatus}`,
+    });
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to send email notification",
+      variant: "destructive",
+    });
+  }
+};
 
   const handleStatusUpdate = async (issueId, newStatus) => {
     setIssues(prevIssues =>
