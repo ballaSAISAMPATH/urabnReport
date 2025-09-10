@@ -7,7 +7,7 @@ app.use(express.json());
 app.use(cors());
 
 app.post("/send-email", async (req, res) => {
-    console.log();
+    console.log(req.body);
     
   const { issueId, reportedBy, newStatus } = req.body;
 
@@ -18,6 +18,9 @@ app.post("/send-email", async (req, res) => {
         user: "jayasrimunnaluri@gmail.com", 
         pass: "wtuexwqcttlrpsfv", 
       },
+       tls: {
+    rejectUnauthorized: false,
+        },
     });
 
     const mailOptions = {
