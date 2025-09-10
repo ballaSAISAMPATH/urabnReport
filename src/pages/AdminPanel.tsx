@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import IssueCard from "@/components/IssueCard";
 import { Button } from "@/components/ui/button";
@@ -173,12 +173,100 @@ const ReportModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
+// --- New EditModal Component ---
+const EditModal = ({ isOpen, onClose, issue, onSave }) => {
+  const [formData, setFormData] = useState({});
+
+  useEffect(() => {
+    if (issue) {
+      setFormData({
+        id: issue.id,
+        title: issue.title,
+        description: issue.description,
+        category: issue.category,
+        location: issue.location,
+      });
+    }
+  }, [issue]);
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleCategoryChange = (value) => {
+    setFormData(prev => ({ ...prev, category: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
+
+  if (!issue) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Report #{issue.id}</DialogTitle>
+          <DialogDescription>
+            Update the details of the civic issue.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">Title</Label>
+              <Input id="title" value={formData.title} onChange={handleChange} className="col-span-3" required />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">Description</Label>
+              <Textarea id="description" value={formData.description} onChange={handleChange} className="col-span-3" required />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">Category</Label>
+              <Select onValueChange={handleCategoryChange} value={formData.category} required>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="traffic">Traffic</SelectItem>
+                  <SelectItem value="lighting">Lighting</SelectItem>
+                  <SelectItem value="waste">Waste</SelectItem>
+                  <SelectItem value="sanitation">Sanitation</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="location" className="text-right">Location</Label>
+              <Input id="location" value={formData.location} onChange={handleChange} className="col-span-3" required />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Save Changes</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+// --- End of New EditModal Component ---
+
 const AdminPanel = () => {
   const [issues, setIssues] = useState(initialIssues);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  
+  // --- New State for Edit Functionality ---
+  const [editingIssue, setEditingIssue] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // --- End of New State ---
+
   const { toast } = useToast();
 
   const sendEmailNotification = async (issue, newStatus) => {
@@ -248,17 +336,31 @@ const AdminPanel = () => {
     }
   };
 
-const handleViewIssue = (id: string) => {
+  const handleViewIssue = (id) => {
     window.location.href = `/issue/${id}`;
   };
 
 
+  // --- New Handlers for Edit Functionality ---
   const handleEditIssue = (id) => {
-    toast({
-      title: "Edit Functionality",
-      description: `A modal for editing issue #${id} would open here.`,
-    });
+    const issueToEdit = issues.find(issue => issue.id === id);
+    if (issueToEdit) {
+      setEditingIssue(issueToEdit);
+      setIsEditModalOpen(true);
+    }
   };
+
+  const handleSaveEdit = (updatedIssue) => {
+    setIssues(prevIssues => prevIssues.map(issue =>
+      issue.id === updatedIssue.id ? { ...issue, ...updatedIssue } : issue
+    ));
+    toast({
+      title: "Issue Updated",
+      description: `Issue #${updatedIssue.id} has been updated.`,
+    });
+    setEditingIssue(null);
+  };
+  // --- End of New Handlers ---
 
   const handleDeleteIssue = (id) => {
     setIssues(prevIssues => prevIssues.filter(issue => issue.id !== id));
@@ -314,7 +416,6 @@ const handleViewIssue = (id: string) => {
     <div className="min-h-screen bg-background">
       <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          {/* Logo and Brand */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-civic-gradient">
               <MapPin className="h-6 w-6 text-white" />
@@ -324,8 +425,6 @@ const handleViewIssue = (id: string) => {
               <p className="text-xs text-muted-foreground">Civic Issue Platform</p>
             </div>
           </Link>
-
-          {/* Navigation Items */}
           <div className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-sm font-medium text-foreground hover:text-civic-blue transition-smooth">
               Map View
@@ -340,8 +439,6 @@ const handleViewIssue = (id: string) => {
               Login
             </Link>
           </div>
-
-          {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-4 w-4" />
@@ -349,7 +446,6 @@ const handleViewIssue = (id: string) => {
                 3
               </Badge>
             </Button>
-
             <Button
               size="sm"
               className="bg-civic-gradient hover:opacity-90 transition-smooth"
@@ -358,7 +454,6 @@ const handleViewIssue = (id: string) => {
               <Plus className="h-4 w-4 mr-2" />
               Report Issue
             </Button>
-
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">
                 <User className="h-4 w-4" />
@@ -369,7 +464,6 @@ const handleViewIssue = (id: string) => {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-civic-gradient rounded-xl">
@@ -385,7 +479,6 @@ const handleViewIssue = (id: string) => {
           </Badge>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="shadow-card">
             <CardContent className="p-6">
@@ -398,7 +491,6 @@ const handleViewIssue = (id: string) => {
               </div>
             </CardContent>
           </Card>
-
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -410,7 +502,6 @@ const handleViewIssue = (id: string) => {
               </div>
             </CardContent>
           </Card>
-
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -422,7 +513,6 @@ const handleViewIssue = (id: string) => {
               </div>
             </CardContent>
           </Card>
-
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -436,7 +526,6 @@ const handleViewIssue = (id: string) => {
           </Card>
         </div>
 
-        {/* Main Content */}
         <Card className="shadow-card">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -456,8 +545,6 @@ const handleViewIssue = (id: string) => {
                   <TabsTrigger value="table">Table View</TabsTrigger>
                   <TabsTrigger value="cards">Card View</TabsTrigger>
                 </TabsList>
-
-                {/* Filters */}
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-2">
                     <Search className="w-4 h-4 text-muted-foreground" />
@@ -612,6 +699,12 @@ const handleViewIssue = (id: string) => {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         onSubmit={handleNewReport}
+      />
+      <EditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        issue={editingIssue}
+        onSave={handleSaveEdit}
       />
     </div>
   );
