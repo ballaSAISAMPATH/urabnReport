@@ -192,11 +192,14 @@ const ReportIssue = () => {
                             </Button>
                           </div>
                         ) : (
-                          <div>
-                            <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <div className="flex flex-col items-center">
+                            <Camera className="w-12 h-12 text-muted-foreground mb-4" />
                             <div className="space-y-2">
                               <p className="text-sm text-muted-foreground">
-                                Click to upload or drag and drop
+                                Drag and drop or
+                                <Label htmlFor="photo" className="text-civic-blue cursor-pointer font-medium ml-1">
+                                  click to upload
+                                </Label>
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 PNG, JPG up to 10MB
@@ -209,7 +212,7 @@ const ReportIssue = () => {
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          className="sr-only" // Use sr-only to hide it accessibly
                         />
                       </div>
                     </div>
