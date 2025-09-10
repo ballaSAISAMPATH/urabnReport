@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Bell, User, Settings, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MapPin, Bell, User, Plus } from "lucide-react";
+import { NavLink, Link } from "react-router-dom";
 
 const Navigation = () => {
   return (
@@ -20,18 +20,46 @@ const Navigation = () => {
 
         {/* Navigation Items */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="text-sm font-medium text-foreground hover:text-civic-blue transition-smooth">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `text-sm font-medium transition-smooth ${
+                isActive ? "text-civic-blue" : "text-foreground hover:text-civic-blue"
+              }`
+            }
+          >
             Map View
-          </Link>
-          <Link to="/reports" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+          </NavLink>
+          <NavLink
+            to="/reports"
+            className={({ isActive }) =>
+              `text-sm font-medium transition-smooth ${
+                isActive ? "text-civic-blue" : "text-muted-foreground hover:text-civic-blue"
+              }`
+            }
+          >
             All Reports
-          </Link>
-          <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+          </NavLink>
+          <NavLink
+            to="/admin"
+            className={({ isActive }) =>
+              `text-sm font-medium transition-smooth ${
+                isActive ? "text-civic-blue" : "text-muted-foreground hover:text-civic-blue"
+              }`
+            }
+          >
             Admin Panel
-          </Link>
-          <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+          </NavLink>
+          <NavLink
+            to="/login"
+            className={({ isActive }) =>
+              `text-sm font-medium transition-smooth ${
+                isActive ? "text-civic-blue" : "text-muted-foreground hover:text-civic-blue"
+              }`
+            }
+          >
             Login
-          </Link>
+          </NavLink>
         </div>
 
         {/* Action Buttons */}
@@ -42,7 +70,7 @@ const Navigation = () => {
               3
             </Badge>
           </Button>
-          
+
           <Button size="sm" className="bg-civic-gradient hover:opacity-90 transition-smooth" asChild>
             <Link to="/report">
               <Plus className="h-4 w-4 mr-2" />
@@ -51,9 +79,14 @@ const Navigation = () => {
           </Button>
 
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/login">
+            <NavLink
+              to="/login"
+              className={({ isActive }) =>
+                isActive ? "text-civic-blue" : "text-muted-foreground"
+              }
+            >
               <User className="h-4 w-4" />
-            </Link>
+            </NavLink>
           </Button>
         </div>
       </div>
@@ -62,3 +95,4 @@ const Navigation = () => {
 };
 
 export default Navigation;
+x

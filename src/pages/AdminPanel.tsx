@@ -3,8 +3,14 @@ import Navigation from "@/components/Navigation";
 import IssueCard from "@/components/IssueCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MapPin, Bell, User, Settings, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -33,65 +39,151 @@ import {
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
 
-const mockIssues = [
+const initialIssues = [
   {
     id: '1',
     title: 'Large Pothole on Main Street',
     description: 'Deep pothole causing traffic issues and potential vehicle damage.',
-    category: 'traffic' as const,
-    status: 'pending' as const,
+    category: 'traffic',
+    status: 'pending',
     location: 'Main St & Oak Ave',
-    coordinates: [-74.006, 40.7128] as [number, number],
+    coordinates: [-74.006, 40.7128],
     imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
     reportedBy: 'John Smith',
     reportedAt: '2024-01-15',
     commentsCount: 12,
     likesCount: 8,
-    priority: 'high' as const,
+    priority: 'high',
   },
   {
     id: '2',
     title: 'Broken Street Light',
     description: 'Street light has been out for a week, making the area unsafe.',
-    category: 'lighting' as const,
-    status: 'in_progress' as const,
+    category: 'lighting',
+    status: 'in_progress',
     location: 'Pine Street',
-    coordinates: [-74.008, 40.7148] as [number, number],
+    coordinates: [-74.008, 40.7148],
     reportedBy: 'Sarah Johnson',
     reportedAt: '2024-01-14',
     commentsCount: 5,
     likesCount: 15,
-    priority: 'medium' as const,
+    priority: 'medium',
   },
   {
     id: '3',
     title: 'Illegal Dumping Site',
     description: 'Large amount of construction waste dumped illegally.',
-    category: 'waste' as const,
-    status: 'resolved' as const,
+    category: 'waste',
+    status: 'resolved',
     location: 'Community Center',
-    coordinates: [-74.004, 40.7108] as [number, number],
+    coordinates: [-74.004, 40.7108],
     imageUrl: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=300&fit=crop',
     reportedBy: 'Mike Chen',
     reportedAt: '2024-01-12',
     commentsCount: 8,
     likesCount: 22,
-    priority: 'low' as const,
+    priority: 'low',
   },
 ];
 
+const ReportModal = ({ isOpen, onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    location: '',
+    reportedBy: 'Guest User',
+  });
+
+  const handleChange = (e) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleCategoryChange = (value) => {
+    setFormData(prev => ({ ...prev, category: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+    setFormData({
+      title: '',
+      description: '',
+      category: '',
+      location: '',
+      reportedBy: 'Guest User',
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>File a New Report</DialogTitle>
+          <DialogDescription>
+            Fill in the details of the civic issue you've encountered.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
+              <Input id="title" value={formData.title} onChange={handleChange} className="col-span-3" required />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea id="description" value={formData.description} onChange={handleChange} className="col-span-3" required />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select onValueChange={handleCategoryChange} required>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="traffic">Traffic</SelectItem>
+                  <SelectItem value="lighting">Lighting</SelectItem>
+                  <SelectItem value="waste">Waste</SelectItem>
+                  <SelectItem value="sanitation">Sanitation</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="location" className="text-right">
+                Location
+              </Label>
+              <Input id="location" value={formData.location} onChange={handleChange} className="col-span-3" required />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Submit Report</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const AdminPanel = () => {
+  const [issues, setIssues] = useState(initialIssues);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const { toast } = useToast();
 
-  // Simulate sending email notification
-  const sendEmailNotification = async (issue: any, newStatus: string) => {
+  const sendEmailNotification = async (issue, newStatus) => {
     try {
-      // In a real app, this would call your backend API
       console.log('Sending email notification:', { issue: issue.id, newStatus });
-      
       toast({
         title: "Email Sent",
         description: `Notification sent to ${issue.reportedBy} about status update to ${newStatus}`,
@@ -105,16 +197,15 @@ const AdminPanel = () => {
     }
   };
 
-  // Handle status update
-  const handleStatusUpdate = async (issueId: string, newStatus: string) => {
-    const issue = mockIssues.find(i => i.id === issueId);
+  const handleStatusUpdate = async (issueId, newStatus) => {
+    setIssues(prevIssues =>
+      prevIssues.map(issue =>
+        issue.id === issueId ? { ...issue, status: newStatus } : issue
+      )
+    );
+    const issue = issues.find(i => i.id === issueId);
     if (issue) {
-      // Update status (in real app, this would update the backend)
-      issue.status = newStatus as any;
-      
-      // Send email notification
       await sendEmailNotification(issue, newStatus);
-      
       toast({
         title: "Status Updated",
         description: `Issue #${issueId} status updated to ${newStatus}`,
@@ -122,7 +213,6 @@ const AdminPanel = () => {
     }
   };
 
-  // Export to Excel
   const exportToExcel = () => {
     try {
       const exportData = filteredIssues.map(issue => ({
@@ -142,9 +232,9 @@ const AdminPanel = () => {
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Issues');
-      
+
       XLSX.writeFile(workbook, `civic_issues_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
+
       toast({
         title: "Export Successful",
         description: "Issues exported to Excel file successfully",
@@ -158,43 +248,60 @@ const AdminPanel = () => {
     }
   };
 
-  // View issue details
-  const handleViewIssue = (id: string) => {
+const handleViewIssue = (id: string) => {
     window.location.href = `/issue/${id}`;
   };
 
-  // Edit issue (placeholder)
-  const handleEditIssue = (id: string) => {
+
+  const handleEditIssue = (id) => {
     toast({
-      title: "Edit Issue",
-      description: `Edit functionality for issue #${id} would open here`,
+      title: "Edit Functionality",
+      description: `A modal for editing issue #${id} would open here.`,
     });
   };
 
-  // Delete issue
-  const handleDeleteIssue = (id: string) => {
-    // In real app, this would delete from backend
+  const handleDeleteIssue = (id) => {
+    setIssues(prevIssues => prevIssues.filter(issue => issue.id !== id));
     toast({
       title: "Issue Deleted",
-      description: `Issue #${id} has been deleted`,
+      description: `Issue #${id} has been deleted.`,
       variant: "destructive",
     });
   };
 
-  const filteredIssues = mockIssues.filter(issue => {
+  const handleNewReport = (newIssueData) => {
+    const newIssue = {
+      id: (issues.length + 1).toString(),
+      ...newIssueData,
+      status: 'pending',
+      reportedAt: new Date().toISOString().split('T')[0],
+      coordinates: [-74.007, 40.713],
+      imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+      commentsCount: 0,
+      likesCount: 0,
+      priority: 'medium',
+    };
+    setIssues(prevIssues => [...prevIssues, newIssue]);
+    toast({
+      title: "Report Submitted",
+      description: `Your report has been successfully submitted!`,
+    });
+  };
+
+  const filteredIssues = issues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         issue.location.toLowerCase().includes(searchTerm.toLowerCase());
+      issue.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || issue.status === selectedStatus;
     const matchesCategory = selectedCategory === 'all' || issue.category === selectedCategory;
-    
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
   const stats = {
-    total: mockIssues.length,
-    pending: mockIssues.filter(i => i.status === 'pending').length,
-    inProgress: mockIssues.filter(i => i.status === 'in_progress').length,
-    resolved: mockIssues.filter(i => i.status === 'resolved').length,
+    total: issues.length,
+    pending: issues.filter(i => i.status === 'pending').length,
+    inProgress: issues.filter(i => i.status === 'in_progress').length,
+    resolved: issues.filter(i => i.status === 'resolved').length,
   };
 
   const priorityColors = {
@@ -205,8 +312,62 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
+      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          {/* Logo and Brand */}
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-civic-gradient">
+              <MapPin className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-civic-navy">UrbanReport</h1>
+              <p className="text-xs text-muted-foreground">Civic Issue Platform</p>
+            </div>
+          </Link>
+
+          {/* Navigation Items */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link to="/" className="text-sm font-medium text-foreground hover:text-civic-blue transition-smooth">
+              Map View
+            </Link>
+            <Link to="/reports" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+              All Reports
+            </Link>
+            <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+              Admin Panel
+            </Link>
+            <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-civic-blue transition-smooth">
+              Login
+            </Link>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-3">
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell className="h-4 w-4" />
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-civic-blue text-xs text-white p-0 flex items-center justify-center">
+                3
+              </Badge>
+            </Button>
+
+            <Button
+              size="sm"
+              className="bg-civic-gradient hover:opacity-90 transition-smooth"
+              onClick={() => setIsReportModalOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Report Issue
+            </Button>
+
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">
+                <User className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </nav>
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -237,7 +398,7 @@ const AdminPanel = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -249,7 +410,7 @@ const AdminPanel = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -261,7 +422,7 @@ const AdminPanel = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -295,7 +456,7 @@ const AdminPanel = () => {
                   <TabsTrigger value="table">Table View</TabsTrigger>
                   <TabsTrigger value="cards">Card View</TabsTrigger>
                 </TabsList>
-                
+
                 {/* Filters */}
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-2">
@@ -368,17 +529,17 @@ const AdminPanel = () => {
                             <div className="flex items-center space-x-2">
                               <Badge className={`${
                                 issue.status === 'pending' ? 'bg-status-pending' :
-                                issue.status === 'in_progress' ? 'bg-status-progress' :
-                                'bg-status-resolved'
-                              } text-white`}>
+                                  issue.status === 'in_progress' ? 'bg-status-progress' :
+                                    'bg-status-resolved'
+                                } text-white`}>
                                 {issue.status.replace('_', ' ')}
                               </Badge>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  const newStatus = issue.status === 'pending' ? 'in_progress' : 
-                                                  issue.status === 'in_progress' ? 'resolved' : 'pending';
+                                  const newStatus = issue.status === 'pending' ? 'in_progress' :
+                                    issue.status === 'in_progress' ? 'resolved' : 'pending';
                                   handleStatusUpdate(issue.id, newStatus);
                                 }}
                                 className="h-6 text-xs"
@@ -398,25 +559,25 @@ const AdminPanel = () => {
                           <TableCell>{issue.reportedAt}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-1">
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleViewIssue(issue.id)}
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleEditIssue(issue.id)}
                                 title="Edit Issue"
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="text-red-600 hover:text-red-700"
                                 onClick={() => handleDeleteIssue(issue.id)}
                                 title="Delete Issue"
@@ -438,7 +599,7 @@ const AdminPanel = () => {
                     <IssueCard
                       key={issue.id}
                       issue={issue}
-                      onViewDetails={(id) => handleViewIssue(id)}
+                      onViewDetails={() => handleViewIssue(issue.id)}
                     />
                   ))}
                 </div>
@@ -447,6 +608,11 @@ const AdminPanel = () => {
           </CardContent>
         </Card>
       </div>
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onSubmit={handleNewReport}
+      />
     </div>
   );
 };
