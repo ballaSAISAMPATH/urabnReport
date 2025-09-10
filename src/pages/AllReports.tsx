@@ -278,7 +278,7 @@ const AllReports = () => {
               <IssueCard
                 key={issue.id}
                 issue={issue}
-                onViewDetails={(id) => console.log('View details:', id)}
+                onViewDetails={(id) => window.location.href = `/issue/${id}`}
               />
             ))
           ) : (

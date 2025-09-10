@@ -28,7 +28,10 @@ import {
   Eye,
   Edit,
   Trash2,
+  Mail,
 } from "lucide-react";
+import * as XLSX from 'xlsx';
+import { useToast } from "@/hooks/use-toast";
 
 const mockIssues = [
   {
@@ -81,6 +84,102 @@ const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const { toast } = useToast();
+
+  // Simulate sending email notification
+  const sendEmailNotification = async (issue: any, newStatus: string) => {
+    try {
+      // In a real app, this would call your backend API
+      console.log('Sending email notification:', { issue: issue.id, newStatus });
+      
+      toast({
+        title: "Email Sent",
+        description: `Notification sent to ${issue.reportedBy} about status update to ${newStatus}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send email notification",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async (issueId: string, newStatus: string) => {
+    const issue = mockIssues.find(i => i.id === issueId);
+    if (issue) {
+      // Update status (in real app, this would update the backend)
+      issue.status = newStatus as any;
+      
+      // Send email notification
+      await sendEmailNotification(issue, newStatus);
+      
+      toast({
+        title: "Status Updated",
+        description: `Issue #${issueId} status updated to ${newStatus}`,
+      });
+    }
+  };
+
+  // Export to Excel
+  const exportToExcel = () => {
+    try {
+      const exportData = filteredIssues.map(issue => ({
+        ID: issue.id,
+        Title: issue.title,
+        Description: issue.description,
+        Category: issue.category,
+        Status: issue.status,
+        Location: issue.location,
+        'Reported By': issue.reportedBy,
+        'Reported Date': issue.reportedAt,
+        Priority: issue.priority,
+        Comments: issue.commentsCount,
+        Likes: issue.likesCount,
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Issues');
+      
+      XLSX.writeFile(workbook, `civic_issues_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast({
+        title: "Export Successful",
+        description: "Issues exported to Excel file successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export issues to Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // View issue details
+  const handleViewIssue = (id: string) => {
+    window.location.href = `/issue/${id}`;
+  };
+
+  // Edit issue (placeholder)
+  const handleEditIssue = (id: string) => {
+    toast({
+      title: "Edit Issue",
+      description: `Edit functionality for issue #${id} would open here`,
+    });
+  };
+
+  // Delete issue
+  const handleDeleteIssue = (id: string) => {
+    // In real app, this would delete from backend
+    toast({
+      title: "Issue Deleted",
+      description: `Issue #${id} has been deleted`,
+      variant: "destructive",
+    });
+  };
 
   const filteredIssues = mockIssues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -182,9 +281,9 @@ const AdminPanel = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-civic-navy">Issue Management</CardTitle>
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={exportToExcel}>
                   <Download className="w-4 h-4 mr-2" />
-                  Export
+                  Export Excel
                 </Button>
               </div>
             </div>
@@ -266,13 +365,27 @@ const AdminPanel = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${
-                              issue.status === 'pending' ? 'bg-status-pending' :
-                              issue.status === 'in_progress' ? 'bg-status-progress' :
-                              'bg-status-resolved'
-                            } text-white`}>
-                              {issue.status.replace('_', ' ')}
-                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Badge className={`${
+                                issue.status === 'pending' ? 'bg-status-pending' :
+                                issue.status === 'in_progress' ? 'bg-status-progress' :
+                                'bg-status-resolved'
+                              } text-white`}>
+                                {issue.status.replace('_', ' ')}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newStatus = issue.status === 'pending' ? 'in_progress' : 
+                                                  issue.status === 'in_progress' ? 'resolved' : 'pending';
+                                  handleStatusUpdate(issue.id, newStatus);
+                                }}
+                                className="h-6 text-xs"
+                              >
+                                <Mail className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
@@ -285,13 +398,29 @@ const AdminPanel = () => {
                           <TableCell>{issue.reportedAt}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-1">
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleViewIssue(issue.id)}
+                                title="View Details"
+                              >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleEditIssue(issue.id)}
+                                title="Edit Issue"
+                              >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteIssue(issue.id)}
+                                title="Delete Issue"
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
@@ -309,7 +438,7 @@ const AdminPanel = () => {
                     <IssueCard
                       key={issue.id}
                       issue={issue}
-                      onViewDetails={(id) => console.log('View details:', id)}
+                      onViewDetails={(id) => handleViewIssue(id)}
                     />
                   ))}
                 </div>

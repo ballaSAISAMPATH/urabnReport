@@ -184,7 +184,7 @@ const Index = () => {
                 <IssueCard
                   key={issue.id}
                   issue={issue}
-                  onViewDetails={(id) => console.log('View issue:', id)}
+                  onViewDetails={(id) => window.location.href = `/issue/${id}`}
                 />
               ))}
             </div>
